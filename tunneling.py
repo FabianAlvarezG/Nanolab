@@ -41,7 +41,7 @@ def find_delta(dist,cond):
        de menor a mayor conductancia
        suponiendo el comportamiento del histograma
        2D de la medicion'''
-    epsilon = 20
+    epsilon = 100
     #mean_max_loc = []
     #std_max_loc = []
     maximos = []
@@ -49,7 +49,9 @@ def find_delta(dist,cond):
     m = len(cond)
     for i in range(n):
         cond_r = cond[m - (i + 1) * epsilon: m - i * epsilon ] #se obtienen los mini intervalos desde atras para adelante
-        max_loc = cond_r[argrelextrema(cond_r, np.greater)[0]] # se encuentran los maximos locales de cada mini intervalo
+        #max_loc = cond_r[argrelextrema(cond_r, np.greater)[0]]
+        max_loc = max(cond_r)
+        # se encuentran los maximos locales de cada mini intervalo
         #prom = np.mean(max_loc)
         #std = np.std(max_loc)
         #mean_max_loc = np.append(mean_max_loc,prom)
@@ -182,13 +184,63 @@ for i in range(len(sort_hist_noise)):
             representative_value = -1 * np.abs(sup_inoise + inf_inoise)/ 2. #valor representativo, me aseguro que siempre sea negativo heheh
             most_frequent_noise_cond = np.append(most_frequent_noise_cond, representative_value)
 """finalmente, la cota (segun yo xD puede que este mal)"""
-cota = np.mean(most_frequent_noise_cond)
+cota = max(most_frequent_noise_cond)
+print ' '
 print '* * * THE COTITAX * * *'
 print cota
 print '* * * * * * * * * * * *'
+print '  '
 
-""" O J O : falta graficar la recta aun hehehe me da pajita pero subo por mientras esta cosita...  los tkm"""
+cota_raw = (10 ** cota)
+'GRAFICAMOS LA INFORMACION'
+jeje = np.where(cond < 0)
+cond = np.delete(cond, jeje)
+dist = np.delete(dist, jeje)
+logcond = np.log10(cond)
+logdist = np.log10(dist)
+plt.plot(dist, logcond, '.')
+plt.ylabel("conductancia")
+plt.xlabel("distancia (nm)")
+plt.axhline(y = cota, xmin = dist[0], xmax= dist[len(dist)-1], linewidth=2, color = 'k')
+plt.show()
+
+""" O J O : falta graficar la recta aun hehehe me da pajita pero subo por mientras esta cosita...  los tkm """
 
 """ IMPORTANTE: la cotitax se obtiene como un promedio de lo mas repetido pero no es rigurosamente correcto si tiene mucha dispersion
     podemos atacar el problema reduciendo la dispersion en la seleccion previa de los datos o hacer un fit con el ultimo histograma
     de todas formas es necesario que corrijan eso... esto es solo una idea """
+
+# P A R T E   2
+'''eliminamos lo que NO es RUIDO '''
+cleanConductance = []
+cleanDisplacement =[]
+j = 1
+n = len(logcond) - 1
+switch = 0
+delete_idx = []
+for i  in range(1, n-2):
+    if (logcond[i-1] > cota and logcond[i] <= cota):
+        j = -1 * j
+        switch = switch + 1
+    elif (logcond[i-1] <= cota and logcond[i] > cota):
+        j = -1 * j
+        witch = switch + 1
+    elif j == -1:
+        delete_idx.append(i)
+    if switch > 4 :
+        break
+logcond= np.delete(logcond,delete_idx)
+dist = np.delete(dist,delete_idx )
+
+print 'conductancias que no son RUIDO: '
+print cleanConductance
+
+""" FILTRADO graph """
+plt.plot(dist,logcond, '.')
+plt.xlabel(" distancia (nm) ")
+plt.ylabel(" conductancias ")
+plt.show ()
+
+
+
+#se plantea ver la variacion del area bajo los puntos
